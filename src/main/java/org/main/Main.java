@@ -11,36 +11,44 @@ import com.opencsv.CSVReader;
 import com.opencsv.exceptions.CsvException;
 
 
+
 public class Main {
+    //Position of elements in each tweetData
     static int Tweet = 0;
     static int Retweets = 1;
     static int Favorites = 2;
     static int Datetime = 3;
-    static ArrayList<String> stopwordList;
+
+    //Configurable Variables
+    static int windowSize = 50; //Size of windows to be processed together
+    static String pathHeader = "src/main/java/org/resource/";
 
     public static void main(String[] args) throws IOException {
-        String pathHeader = "src/main/java/org/resource/";
         FileReader csvFile = new FileReader(pathHeader + "trump_20200530_clean.csv");
         File stopwordTweetFile = new File(pathHeader + "stopwords-tweet.txt");
         File stopwordEnglishFile = new File(pathHeader + "stopwords-en.txt");
         Scanner stopwordTweetReader = new Scanner(stopwordTweetFile);
         Scanner stopwordEnglishReader = new Scanner(stopwordEnglishFile);
-        stopwordList = new ArrayList<>(Arrays.asList(stopwordTweetReader.nextLine().split(",")));
+        ArrayList<String> stopwordList = new ArrayList<>(Arrays.asList(stopwordTweetReader.nextLine().split(",")));
         while (stopwordEnglishReader.hasNextLine()) stopwordList.add(stopwordEnglishReader.nextLine());
-        System.out.printf(stopwordList.toString());
         try (CSVReader reader = new CSVReader(csvFile)) {
             List<String[]> r = reader.readAll();
             for (String[] tweetData : r) {
+                /* Stage 1: Pre-Processing */
                 //Modify content
                 String content = tweetData[Tweet];
                 //Sanitize tweets
                 content = cleanString(content);
-                //Split string to list
-                String[] rawWordList = content.split(" ");
-                ArrayList<String> wordList = new ArrayList<String>();
+                //Lemmatize tweets & Split string to list
+                StanfordLemmatizer slem = new StanfordLemmatizer();
+                List<String> rawWordList = slem.lemmatize(content);
+                ArrayList<String> wordList = new ArrayList<>();
                 //Remove stop words
                 for (String word : rawWordList)
                     if (!stopwordList.contains(word) && word.length()>0) wordList.add(word);
+
+                /* Stage 2: Compute TF-IDF */
+
 
                 System.out.println(wordList);
             }
@@ -66,3 +74,5 @@ public class Main {
         return commentstr;
     }
 }
+
+
