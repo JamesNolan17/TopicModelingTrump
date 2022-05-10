@@ -1,15 +1,12 @@
 package org.main;
+
 import java.io.*;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Scanner;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import com.opencsv.CSVReader;
 import com.opencsv.exceptions.CsvException;
-
 
 
 public class Main {
@@ -20,37 +17,57 @@ public class Main {
     static int Datetime = 3;
 
     //Configurable Variables
-    static int windowSize = 50; //Size of windows to be processed together
+    static int windowSize = 50; //Size of batch to calculate tf-idf
     static String pathHeader = "src/main/java/org/resource/";
 
     public static void main(String[] args) throws IOException {
+        List<String[]> CSVmetaData;
+        ArrayList<String> stopwordList;
+        HashMap<String, Word> wordHashMap = new HashMap<>();
+        HashMap<UUID, Tweet> tweetHashMap = new HashMap<>();
+        int tweetIndex = 0;
+        //Load CSV File
         FileReader csvFile = new FileReader(pathHeader + "trump_20200530_clean.csv");
+        //Load stopword File
         File stopwordTweetFile = new File(pathHeader + "stopwords-tweet.txt");
         File stopwordEnglishFile = new File(pathHeader + "stopwords-en.txt");
+        //Create stopword table
         Scanner stopwordTweetReader = new Scanner(stopwordTweetFile);
         Scanner stopwordEnglishReader = new Scanner(stopwordEnglishFile);
-        ArrayList<String> stopwordList = new ArrayList<>(Arrays.asList(stopwordTweetReader.nextLine().split(",")));
+        stopwordList = new ArrayList<>(Arrays.asList(stopwordTweetReader.nextLine().split(",")));
         while (stopwordEnglishReader.hasNextLine()) stopwordList.add(stopwordEnglishReader.nextLine());
+        //Read tweetData CSV table
         try (CSVReader reader = new CSVReader(csvFile)) {
-            List<String[]> r = reader.readAll();
-            for (String[] tweetData : r) {
+            CSVmetaData = reader.readAll();
+            for (String[] tweetData : CSVmetaData) {
+                //Variable for each tweet
+                String[] rawWordList;
+                ArrayList<String> wordList;
                 /* Stage 1: Pre-Processing */
                 //Modify content
                 String content = tweetData[Tweet];
                 //Sanitize tweets
                 content = cleanString(content);
-                //Lemmatize tweets & Split string to list
-                StanfordLemmatizer slem = new StanfordLemmatizer();
-                List<String> rawWordList = slem.lemmatize(content);
-                ArrayList<String> wordList = new ArrayList<>();
+                //Lemmatize tweets & split string to list
+                //StanfordLemmatizer slem = new StanfordLemmatizer();
+                rawWordList = content.split(" ");
+                //List<String> rawWordList = slem.lemmatize(content);
+                wordList = new ArrayList<>();
                 //Remove stop words
                 for (String word : rawWordList)
-                    if (!stopwordList.contains(word) && word.length()>0) wordList.add(word);
+                    if (!stopwordList.contains(word) && word.length() > 0) wordList.add(word);
+                //Put this tweet inside the tweet map
+                Tweet tweet = new Tweet(wordList);
+                System.out.println(tweet);
+                tweetHashMap.put(tweet.id,tweet);
 
                 /* Stage 2: Compute TF-IDF */
+                for (String word : wordList) {
 
+                }
 
                 System.out.println(wordList);
+                tweetIndex++;
             }
         } catch (IOException | CsvException e) {
             throw new RuntimeException(e);
@@ -69,7 +86,7 @@ public class Main {
         }
 
         //Remove symbols and numbers
-        commentstr = commentstr.replaceAll("[^a-zA-Z]"," ");
+        commentstr = commentstr.replaceAll("[^a-zA-Z]", " ");
         commentstr = commentstr.toLowerCase();
         return commentstr;
     }
