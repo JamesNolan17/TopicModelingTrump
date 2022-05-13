@@ -17,15 +17,19 @@ public class Main {
     static int Datetime = 3;
 
     //Configurable Variables
-    static int windowSize = 50; //Size of batch to calculate tf-idf
+    static int roundSize = 50; //Size of batch to calculate tf-idf
     static String pathHeader = "src/main/java/org/resource/";
 
     public static void main(String[] args) throws IOException {
+        //Variable global
         List<String[]> CSVmetaData;
         ArrayList<String> stopwordList;
         HashMap<String, Word> wordHashMap = new HashMap<>();
         HashMap<UUID, Tweet> tweetHashMap = new HashMap<>();
+        HashMap<String, Integer> windowMap = new HashMap<>(); //Only word - frequency
+
         int tweetIndex = 0;
+        int roundIndex = 1;
         //Load CSV File
         FileReader csvFile = new FileReader(pathHeader + "trump_20200530_clean.csv");
         //Load stopword File
@@ -58,16 +62,39 @@ public class Main {
                     if (!stopwordList.contains(word) && word.length() > 0) wordList.add(word);
                 //Put this tweet inside the tweet map
                 Tweet tweet = new Tweet(wordList);
+
                 System.out.println(tweet);
                 tweetHashMap.put(tweet.id,tweet);
 
-                /* Stage 2: Compute TF-IDF */
-                for (String word : wordList) {
+                /* Stage 2: Maintain hashMaps */
+                for (String word: wordList){
+                    if (!wordHashMap.containsKey(word)) wordHashMap.put(word,new Word(word));
+                    if (!windowMap.containsKey(word)) windowMap.put(word, 0);
+                    //Update frequency
+                    windowMap.put(word, windowMap.get(word)+1);
+                }
 
+
+                /* Stage 2: Compute TFIDF */
+                if (tweetIndex % roundSize == 0){
+                    for (String word: windowMap.keySet()){
+                        wordHashMap.get(word).updateWindowNum();
+                        wordHashMap.get(word).updateTfidf(roundSize, windowMap.get(word),roundIndex);
+                        System.out.println(roundIndex);
+                        System.out.println(wordHashMap.get(word));
+                    }
                 }
 
                 System.out.println(wordList);
+                //Increment index
                 tweetIndex++;
+                if (tweetIndex % roundSize == 0) {
+                    roundIndex++;
+                    for (String word: wordHashMap.keySet()) {
+                        wordHashMap.get(word).clearFreq();
+                        windowMap.remove(word);
+                    }
+                }
             }
         } catch (IOException | CsvException e) {
             throw new RuntimeException(e);

@@ -15,7 +15,22 @@ public class Word {
         this.isBursty = false;
     }
 
-    public void gotMatch() {
+    public void updateFreq() {
         this.frequency++;
+    }
+    public void updateWindowNum(){ this.windowNumber++; }
+    public void updateTfidf(int windowSize, int frequency, int totalWindowNum){
+        if (this.frequency == 0) return;
+        this.frequency = frequency;
+        this.tfidf = ((double)frequency / (double)windowSize) * (-Math.log((double)windowNumber / (double)totalWindowNum));
+    }
+
+    public void clearFreq() {
+        this.frequency = 0;
+    }
+
+    @Override
+    public String toString() {
+        return String.format("%s - freq%d - window%d - tfidf%f", this.value, this.frequency, this.windowNumber, this.tfidf);
     }
 }
